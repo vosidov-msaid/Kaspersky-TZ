@@ -1,4 +1,5 @@
 import os
+import shutil
 import random
 import datetime
 import uvicorn
@@ -6,15 +7,16 @@ from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.responses import FileResponse
 from starlette.concurrency import run_in_threadpool
 
-from word_morphy import get_morphological_info
+from word_morphy import get_morphological_info_from_file
 from export_excel import export_to_excel
 
 app = FastAPI()
 
 
-def save_file_bytes(file_path: str, contents: bytes):
-    with open(file_path, "wb") as file_content:
-        file_content.write(contents)
+def save_uploaded_file(from_file, to_path: str):
+    from_file.seek(0)
+    with open(to_path, "wb") as file_content:
+        shutil.copyfileobj(from_file, file_content)
 
 
 @app.post("/public/report/export")
@@ -28,15 +30,12 @@ async def upload_file(file: UploadFile):
     os.makedirs(path_name, exist_ok=True)
     file_path = f"{path_name}/{rand_file}_{file.filename}"
 
-    contents = await file.read()
-    text = contents.decode("utf-8")
+    await run_in_threadpool(save_uploaded_file, file.file, file_path)
 
     export_path = f"{path_name}/morphological_info.xlsx"
 
-    morphological_info = await get_morphological_info(text)
+    morphological_info = await get_morphological_info_from_file(file_path)
     await export_to_excel(morphological_info, export_path)
-
-    await run_in_threadpool(save_file_bytes, file_path, contents)
     
     return FileResponse(
         path=export_path,

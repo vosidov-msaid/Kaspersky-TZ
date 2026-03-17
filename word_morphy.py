@@ -1,10 +1,11 @@
 import re
+import asyncio
 import pymorphy2
 from collections import Counter, defaultdict
 
 morph = pymorphy2.MorphAnalyzer()
 
-def get_morphological_info(text):
+async def get_morphological_info(text):
     
     lines = text.splitlines()
     total_counts = Counter()
@@ -28,4 +29,4 @@ def get_morphological_info(text):
             "total_count": total_counts[lemma],
             "line_counts": [line_count.get(lemma, 0) for line_count in line_counts]
         }
-    return result
+    return await asyncio.to_thread(lambda: result)

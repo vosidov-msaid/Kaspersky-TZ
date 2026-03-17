@@ -1,6 +1,7 @@
 import xlsxwriter
+import asyncio
 
-def export_to_excel(data, filename):
+async def export_to_excel(data, filename):
     workbook = xlsxwriter.Workbook(filename)
     worksheet = workbook.add_worksheet()
 
@@ -14,3 +15,4 @@ def export_to_excel(data, filename):
         worksheet.write(row, 2, ", ".join(str(count) for count in info["line_counts"]))
 
     workbook.close()
+    return await asyncio.to_thread(lambda: None)

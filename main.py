@@ -3,9 +3,11 @@ import shutil
 import random
 import datetime
 import uvicorn
-from fastapi import FastAPI, Request, HTTPException, status, File, UploadFile
+from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi.responses import FileResponse
 
 from word_morphy import get_morphological_info
+from export_excel import export_to_excel
 
 app = FastAPI()
 @app.post("/public/report/export")
@@ -22,12 +24,19 @@ async def upload_file(file: UploadFile):
     contents = await file.read()
     text = contents.decode("utf-8")
 
+    export_path = f"{path_name}/morphological_info.xlsx"
+
     morphological_info = get_morphological_info(text)
+    export_to_excel(morphological_info, export_path)
 
     with open(file_path, "wb+") as file_content:
         shutil.copyfileobj(file.file, file_content)
-    return {"filename": file.filename, "content_type": file.content_type, "file_path": file_path, "morphological_info": morphological_info}
-
+    
+    return FileResponse(
+        path=export_path,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename="morphological_info.xlsx",
+    )
     
 
 if __name__ == "__main__":
